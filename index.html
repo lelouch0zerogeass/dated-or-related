@@ -4,67 +4,71 @@
   <meta charset="utf-8">
   <title>Dated or Related?</title>
   <style>
-    body { text-align:center; font-family:sans-serif; padding:2em; }
-    img { max-width:90%; border:2px solid #666; border-radius:8px; }
-    button { margin:0.5em; padding:0.5em 1em; }
-    #feedback { font-weight:bold; margin-top:1em; }
+    body { text-align:center; font-family:sans-serif; margin:2em }
+    img  { max-width:80%; border:2px solid #666; border-radius:6px }
+    button { margin:0.5em; padding:0.5em 1em }
+    #msg  { font-weight:bold; margin-top:1em }
   </style>
 </head>
 <body>
   <h1>Dated or Related?</h1>
-  <img id="pic" src="" alt="Pair">
+  <img id="pic" src="" alt="Pair photo">
   <div>
     <button id="btnR">Related</button>
     <button id="btnD">Dated</button>
-    <button id="btnN" style="display:none;">Next</button>
+    <button id="btnN" style="display:none">Next</button>
   </div>
-  <p id="feedback"></p>
+  <p id="msg"></p>
   <p id="score"></p>
   <script>
     let data=[], idx=0, score=0;
     const pic=document.getElementById('pic'),
-          fb=document.getElementById('feedback'),
-          sc=document.getElementById('score'),
+          msg=document.getElementById('msg'),
+          scoreEl=document.getElementById('score'),
           bR=document.getElementById('btnR'),
           bD=document.getElementById('btnD'),
           bN=document.getElementById('btnN');
+
     fetch('data/questions.json')
       .then(r=>r.json())
       .then(a=>{
-        const s=new Set();
+        const seen=new Set();
         data=a.filter(q=>{
-          if(s.has(q.family)) return false;
-          s.add(q.family); return true;
+          if(seen.has(q.family)) return false;
+          seen.add(q.family);
+          return true;
         });
         showQ();
       });
+
     function showQ(){
       if(idx>=data.length){
-        document.body.innerHTML=
+        document.body.innerHTML =
           `<h2>Game Over!</h2>
-           <p>Your Score: ${score}/${data.length}</p>`;
+           <p>Your Score: ${score} / ${data.length}</p>`;
         return;
       }
       pic.src=data[idx].file;
-      fb.textContent='';
-      sc.textContent=`Score: ${score}/${idx}`;
+      msg.textContent='';
+      scoreEl.textContent=`Score: ${score} / ${idx}`;
       bR.disabled=bD.disabled=false;
       bN.style.display='none';
     }
+
     function handle(c){
       const ans=data[idx].answer;
       bR.disabled=bD.disabled=true;
-      fb.textContent=
-        c===ans
-          ?`✔️ Correct! It was "${ans.toUpperCase()}"`
-          :`❌ Wrong! It was "${ans.toUpperCase()}"`;
-      if(c===ans) score++;
+      if(c===ans){
+        score++; msg.textContent=`✔️ Correct! It was “${ans}”`;
+      } else {
+        msg.textContent=`❌ Wrong! It was “${ans}”`;
+      }
       bN.style.display='inline';
     }
-    function nxt(){ idx++; showQ(); }
+
     bR.onclick=()=>handle('related');
     bD.onclick=()=>handle('dated');
-    bN.onclick=nxt;
+    bN.onclick=()=>{ idx++; showQ() };
   </script>
 </body>
 </html>
