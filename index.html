@@ -16,18 +16,17 @@
     <img id="pic" src="" alt="Question image">
     <div>
       <button onclick="submitAnswer('related')">Related</button>
-      <button onclick="submitAnswer('dating')">Dating</button>
+      <button onclick="submitAnswer('dated')">Dated</button>
     </div>
     <p id="feedback"></p>
     <p id="score"></p>
   </div>
 
   <script>
-    // 1. Add as many image objects as you like
     const questions = [
-      { url: 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Family_portrait.jpg', answer: 'related' },
-      { url: 'https://upload.wikimedia.org/wikipedia/commons/3/36/Couple_holding_hands.jpg', answer: 'dating' }
-      // …replace or extend with your own public URLs
+      { url: 'pic1.jpg', answer: 'related' },
+      { url: 'pic2.jpg', answer: 'dated' }
+      // Add more rounds here
     ];
 
     let index = 0, score = 0;
