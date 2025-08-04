@@ -4,62 +4,67 @@
   <meta charset="utf-8">
   <title>Dated or Related?</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 2em; }
-    img { max-width: 90%; border: 2px solid #666; border-radius: 8px; }
-    button { margin: 0.5em; padding: 0.5em 1em; font-size: 1.1em; }
-    #feedback { font-weight: bold; margin-top: 1em; }
+    body { text-align:center; font-family:sans-serif; padding:2em; }
+    img { max-width:90%; border:2px solid #666; border-radius:8px; }
+    button { margin:0.5em; padding:0.5em 1em; }
+    #feedback { font-weight:bold; margin-top:1em; }
   </style>
 </head>
 <body>
   <h1>Dated or Related?</h1>
-  <img id="pic" src="" alt="Pair image">
+  <img id="pic" src="" alt="Pair">
   <div>
-    <button onclick="submitAnswer('related')">Related</button>
-    <button onclick="submitAnswer('dated')">Dated</button>
+    <button id="btnR">Related</button>
+    <button id="btnD">Dated</button>
+    <button id="btnN" style="display:none;">Next</button>
   </div>
   <p id="feedback"></p>
   <p id="score"></p>
-
   <script>
-    let data = [], idx = 0, score = 0;
-
-    // Load questions and enforce one per family
+    let data=[], idx=0, score=0;
+    const pic=document.getElementById('pic'),
+          fb=document.getElementById('feedback'),
+          sc=document.getElementById('score'),
+          bR=document.getElementById('btnR'),
+          bD=document.getElementById('btnD'),
+          bN=document.getElementById('btnN');
     fetch('data/questions.json')
-      .then(res => res.json())
-      .then(json => {
-        const seen = new Set();
-        data = json.filter(q => {
-          if (seen.has(q.family)) return false;
-          seen.add(q.family);
-          return true;
+      .then(r=>r.json())
+      .then(a=>{
+        const s=new Set();
+        data=a.filter(q=>{
+          if(s.has(q.family)) return false;
+          s.add(q.family); return true;
         });
-        showQuestion();
+        showQ();
       });
-
-    function showQuestion() {
-      if (idx >= data.length) {
-        document.body.innerHTML =
+    function showQ(){
+      if(idx>=data.length){
+        document.body.innerHTML=
           `<h2>Game Over!</h2>
-           <p>Your Score: ${score} / ${data.length}</p>`;
+           <p>Your Score: ${score}/${data.length}</p>`;
         return;
       }
-      document.getElementById('pic').src = data[idx].file;
-      document.getElementById('feedback').textContent = '';
-      document.getElementById('score').textContent =
-        `Score: ${score} / ${idx}`;
+      pic.src=data[idx].file;
+      fb.textContent='';
+      sc.textContent=`Score: ${score}/${idx}`;
+      bR.disabled=bD.disabled=false;
+      bN.style.display='none';
     }
-
-    function submitAnswer(choice) {
-      const correct = data[idx].answer;
-      const fb = document.getElementById('feedback');
-      if (choice === correct) {
-        score++; fb.textContent = '✔️ Correct!';
-      } else {
-        fb.textContent = `❌ Wrong! It was "${correct.toUpperCase()}"`;
-      }
-      idx++;
-      setTimeout(showQuestion, 800);
+    function handle(c){
+      const ans=data[idx].answer;
+      bR.disabled=bD.disabled=true;
+      fb.textContent=
+        c===ans
+          ?`✔️ Correct! It was "${ans.toUpperCase()}"`
+          :`❌ Wrong! It was "${ans.toUpperCase()}"`;
+      if(c===ans) score++;
+      bN.style.display='inline';
     }
+    function nxt(){ idx++; showQ(); }
+    bR.onclick=()=>handle('related');
+    bD.onclick=()=>handle('dated');
+    bN.onclick=nxt;
   </script>
 </body>
 </html>
