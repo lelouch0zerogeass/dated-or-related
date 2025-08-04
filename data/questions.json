@@ -1,4 +1,4 @@
 [
-  { "file": "images/pic1.jpg", "answer": "related", "family": "Wong" },
-  { "file": "images/pic2.png", "answer": "dated",   "family": "Chan" }
+  { "file":"images/pic1.jpg", "answer":"related", "family":"Smith" },
+  { "file":"images/pic2.png", "answer":"dated",   "family":"Lee" }
 ]
