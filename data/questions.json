@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "file": "images/pic1.jpg",
+    "answer": "related",
+    "family": "Smith",
+    "context": "Outdoors at a family picnic"
+  },
+  {
+    "file": "images/pic2.jpg",
+    "answer": "dated",
+    "family": "Nguyen",
+    "context": "At a coffee shop date"
+  }
+  // …more approved rounds…
+]
