@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dated or Related?</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 1em; }
+    img { max-width: 90%; height: auto; border: 2px solid #ccc; border-radius: 8px; }
+    button { margin: 0.5em; font-size: 1.1em; padding: 0.5em 1em; }
+    #feedback { font-weight: bold; margin-top: 1em; }
+  </style>
+</head>
+<body>
+  <h1>Dated or Related?</h1>
+  <div id="game">
+    <img id="pic" src="" alt="Question image">
+    <div>
+      <button onclick="submitAnswer('related')">Related</button>
+      <button onclick="submitAnswer('dating')">Dating</button>
+    </div>
+    <p id="feedback"></p>
+    <p id="score"></p>
+  </div>
+
+  <script>
+    // 1. Add as many image objects as you like
+    const questions = [
+      { url: 'https://upload.wikimedia.org/wikipedia/commons/8/8c/Family_portrait.jpg', answer: 'related' },
+      { url: 'https://upload.wikimedia.org/wikipedia/commons/3/36/Couple_holding_hands.jpg', answer: 'dating' }
+      // …replace or extend with your own public URLs
+    ];
+
+    let index = 0, score = 0;
+
+    function loadQuestion() {
+      document.getElementById('pic').src = questions[index].url;
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('score').textContent = `Score: ${score} / ${index}`;
+    }
+
+    function submitAnswer(choice) {
+      const correct = questions[index].answer;
+      if (choice === correct) {
+        score++;
+        document.getElementById('feedback').textContent = 'Correct!';
+      } else {
+        document.getElementById('feedback').textContent = `Wrong! They are "${correct}".`;
+      }
+      index++;
+      if (index < questions.length) {
+        setTimeout(loadQuestion, 1000);
+      } else {
+        document.getElementById('game').innerHTML =
+          `<h2>Game Over!</h2><p>Final Score: ${score} / ${questions.length}</p>`;
+      }
+    }
+
+    window.onload = loadQuestion;
+  </script>
+</body>
+</html>
