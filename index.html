@@ -2,73 +2,270 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Dated or Related?</title>
   <style>
-    body { text-align:center; font-family:sans-serif; margin:2em }
-    img  { max-width:80%; border:2px solid #666; border-radius:6px }
-    button { margin:0.5em; padding:0.5em 1em }
-    #msg  { font-weight:bold; margin-top:1em }
+    body { font-family:sans-serif; text-align:center; padding:1em }
+    img { max-width:90%; margin:1em 0; border:2px solid #666 }
+    button,input,select,textarea {
+      font-size:1em; padding:.5em; margin:.5em; width:90%; max-width:300px
+    }
+    .panel { max-width:600px; margin:1em auto; text-align:left; border-top:1px solid #ccc; padding-top:.5em }
+    .entry { margin-bottom:.5em }
   </style>
 </head>
 <body>
   <h1>Dated or Related?</h1>
-  <img id="pic" src="" alt="Pair photo">
-  <div>
+
+  <!-- SETUP -->
+  <div id="setup">
+    <input id="dispName" placeholder="Your display name">
+    <select id="numSelect"><option>10</option><option>20</option><option>30</option></select>
+    <button data-level="beginner">Beginner</button>
+    <button data-level="easy">Easy</button>
+    <button data-level="medium">Medium</button>
+    <button data-level="hard">Hard</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" style="display:none">
+    <img id="pic" alt="photo">
+    <p id="hint"></p>
     <button id="btnR">Related</button>
     <button id="btnD">Dated</button>
-    <button id="btnN" style="display:none">Next</button>
+    <p id="msg"></p>
+    <p id="score"></p>
+    <button id="nextQ" style="display:none">Next</button>
+    <button id="toggleComments">Show Comments</button>
+    <div id="comments" class="panel" style="display:none"></div>
   </div>
-  <p id="msg"></p>
-  <p id="score"></p>
-  <script>
-    let data=[], idx=0, score=0;
-    const pic=document.getElementById('pic'),
-          msg=document.getElementById('msg'),
-          scoreEl=document.getElementById('score'),
-          bR=document.getElementById('btnR'),
-          bD=document.getElementById('btnD'),
-          bN=document.getElementById('btnN');
 
-    fetch('data/questions.json')
-      .then(r=>r.json())
-      .then(a=>{
-        const seen=new Set();
-        data=a.filter(q=>{
-          if(seen.has(q.family)) return false;
-          seen.add(q.family);
-          return true;
-        });
-        showQ();
-      });
+  <!-- PHOTO SUBMISSION -->
+  <h2>Submit a Photo</h2>
+  <div id="submits" class="panel">
+    <input id="subUrl" placeholder="Image URL">
+    <select id="subAns"><option>related</option><option>dated</option></select>
+    <textarea id="subCtx" rows="2" placeholder="Context (when/where?)"></textarea>
+    <button id="subBtn">Submit Photo</button>
+    <div id="subsList"></div>
+  </div>
 
-    function showQ(){
-      if(idx>=data.length){
-        document.body.innerHTML =
-          `<h2>Game Over!</h2>
-           <p>Your Score: ${score} / ${data.length}</p>`;
-        return;
-      }
-      pic.src=data[idx].file;
-      msg.textContent='';
-      scoreEl.textContent=`Score: ${score} / ${idx}`;
-      bR.disabled=bD.disabled=false;
-      bN.style.display='none';
-    }
+  <!-- GAME FEEDBACK -->
+  <h2>Game Feedback</h2>
+  <div id="feedbacks" class="panel">
+    <select id="rate"><option>★★★★★</option><option>★☆☆☆☆</option><option>★★☆☆☆</option><option>★★★☆☆</option><option>★★★★☆</option></select>
+    <textarea id="fbTxt" rows="2" placeholder="Tips or criticism…"></textarea>
+    <button id="fbBtn">Submit Feedback</button>
+    <div id="fbList"></div>
+  </div>
 
-    function handle(c){
-      const ans=data[idx].answer;
-      bR.disabled=bD.disabled=true;
-      if(c===ans){
-        score++; msg.textContent=`✔️ Correct! It was “${ans}”`;
-      } else {
-        msg.textContent=`❌ Wrong! It was “${ans}”`;
-      }
-      bN.style.display='inline';
-    }
+  <!-- CONTACT -->
+  <h2>Contact Me</h2>
+  <div id="contacts" class="panel">
+    <textarea id="ctTxt" rows="2" placeholder="Your message…"></textarea>
+    <button id="ctBtn">Send Message</button>
+    <div id="ctList"></div>
+  </div>
 
-    bR.onclick=()=>handle('related');
-    bD.onclick=()=>handle('dated');
-    bN.onclick=()=>{ idx++; showQ() };
-  </script>
+<script>
+// Repo info
+const [,,owner,repo] = location.pathname.split('/');
+
+// Ask once for token named “DatedOrRelatedGameToken”
+function getToken(){
+  let t = localStorage.getItem('gh_token');
+  if(!t){
+    t = prompt('Paste your GitHub token named DatedOrRelatedGameToken:') || '';
+    localStorage.setItem('gh_token', t);
+  }
+  return t;
+}
+
+// Load or update any JSON file under data/
+async function loadArr(name){
+  const r = await fetch(`data/${name}.json`);
+  return r.ok ? r.json() : [];
+}
+async function saveArr(name, arr){
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/data/${name}.json`;
+  const token = getToken();
+  // 1) fetch existing SHA
+  const r1 = await fetch(url, { headers:{Authorization:'token '+token} });
+  const { sha } = await r1.json();
+  // 2) update file
+  await fetch(url, {
+    method:'PUT',
+    headers:{Authorization:'token '+token,'Content-Type':'application/json'},
+    body: JSON.stringify({
+      message:`update ${name}.json`,
+      content: btoa(JSON.stringify(arr,null,2)), sha
+    })
+  });
+}
+
+// INITIAL LOAD: questions
+let questions=[], queue=[], idx=0, score=0;
+fetch('data/questions.json').then(r=>r.json()).then(d=>questions=d);
+
+// UI refs
+const pic=document.getElementById('pic'),
+      hintP=document.getElementById('hint'),
+      msgP=document.getElementById('msg'),
+      scoreP=document.getElementById('score'),
+      btnR=document.getElementById('btnR'),
+      btnD=document.getElementById('btnD'),
+      nextQ=document.getElementById('nextQ'),
+      setup=document.getElementById('setup'),
+      game=document.getElementById('game'),
+      numSel=document.getElementById('numSelect'),
+      toggleComments=document.getElementById('toggleComments'),
+      commentsDiv=document.getElementById('comments');
+
+// Helper: shuffle array
+const shuffle=a=>a.sort(()=>Math.random()-.5);
+
+// Build round with equal halves
+function buildQueue(count, level){
+  const pool = questions; // skipping level logic for brevity
+  const rel = pool.filter(q=>q.answer==='related'),
+        dat = pool.filter(q=>q.answer==='dated'),
+        half = count/2;
+  return shuffle(
+    shuffle(rel).slice(0,half).concat(shuffle(dat).slice(0,half))
+  );
+}
+
+// Start game
+setup.onclick = e=>{
+  if(e.target.dataset.level){
+    const name = document.getElementById('dispName').value||'Anon';
+    const count = +numSel.value;
+    queue = buildQueue(count, e.target.dataset.level);
+    idx=0; score=0;
+    setup.style.display='none';
+    game.style.display='';
+    showQ(name);
+  }
+};
+
+// Show question or end screen
+async function showQ(name){
+  if(idx>=queue.length){
+    game.innerHTML = `<h2>Round Over!</h2><p>${name}, you scored ${score}/${queue.length}</p><button onclick="location.reload()">Play Again</button>`;
+    return;
+  }
+  const q = queue[idx];
+  pic.src = q.file; hintP.textContent = q.hint||'';
+  msgP.textContent = ''; scoreP.textContent = `Score: ${score}/${idx}`;
+  nextQ.style.display='none';
+}
+
+// Handle a guess
+async function handleGuess(choice){
+  const name = document.getElementById('dispName').value||'Anon';
+  const q = queue[idx];
+  const correct = choice===q.answer;
+  msgP.textContent = correct?'✔️ Correct!':'❌ Wrong!';
+  if(correct) score++;
+  // save guess as comment
+  const comments = await loadArr('comments');
+  comments.push({ photo:q.file, user:name, guess:choice });
+  await saveArr('comments', comments);
+  showExplanation(q, !correct);
+  scoreP.textContent = `Score: ${score}/${idx+1}`;
+  nextQ.style.display='block';
+}
+btnR.onclick = ()=>handleGuess('related');
+btnD.onclick = ()=>handleGuess('dated');
+nextQ.onclick = ()=>{
+  idx++;
+  commentsDiv.style.display='none';
+  toggleComments.textContent='Show Comments';
+  showQ();
+};
+
+// Show explanation, stats, trickiness, comments
+async function showExplanation(q, showTrick){
+  const allCom = await loadArr('comments');
+  const same = allCom.filter(c=>c.photo===q.file);
+  const rel = same.filter(c=>c.guess==='related').length;
+  const total = same.length, dp = total?100-Math.round(rel/total*100):0, rp = 100-dp;
+  let html = `
+    <div><strong>Global guesses:</strong> Related ${rp}% | Dated ${dp}%</div>
+    <div><strong>Answer:</strong> ${q.explanation}</div>`;
+  if(showTrick){
+    const tricky = same
+      .map(c=>c.note||'').filter(n=>/\b(trick|hard|confusing)\b/i.test(n))
+      .slice(0,3).join('; ')||'No tricky feedback yet.';
+    html += `<div><strong>What made it tricky:</strong> ${tricky}</div>`;
+  }
+  same.forEach(c=>{
+    if(c.note) html += `<div><strong>${c.user}</strong>: ${c.note}</div>`;
+  });
+  html += `<div>
+    <input id="newNote" placeholder="Your comment…">
+    <button id="postNote">Post</button>
+  </div>`;
+  commentsDiv.innerHTML = html;
+  commentsDiv.style.display = 'block';
+  toggleComments.textContent = 'Hide Comments';
+  document.getElementById('postNote').onclick = async ()=>{
+    const note = document.getElementById('newNote').value.trim();
+    if(!note) return;
+    const cm = await loadArr('comments');
+    cm.push({ photo:q.file, user:document.getElementById('dispName').value||'Anon', note });
+    await saveArr('comments', cm);
+    showExplanation(q, showTrick);
+  };
+}
+toggleComments.onclick = ()=>{
+  const hidden = commentsDiv.style.display==='none';
+  commentsDiv.style.display = hidden?'block':'none';
+  toggleComments.textContent = hidden?'Hide Comments':'Show Comments';
+};
+
+// PHOTO SUBMISSIONS
+document.getElementById('subBtn').onclick = async ()=>{
+  const url = document.getElementById('subUrl').value.trim();
+  const ans = document.getElementById('subAns').value;
+  const ctx = document.getElementById('subCtx').value.trim();
+  if(!url||!ctx) return alert('Image URL & context required');
+  const arr = await loadArr('submissions');
+  arr.push({ user:document.getElementById('dispName').value||'Anon', url, answer:ans, context:ctx });
+  await saveArr('submissions', arr);
+  loadList('submissions','subsList');
+};
+function loadList(name, elId){
+  loadArr(name).then(arr=>{
+    document.getElementById(elId).innerHTML = arr.map(e=>
+      `<div class="entry">${e.user}: <a href="${e.url}" target="_blank">photo</a> (${e.answer}) – ${e.context}</div>`
+    ).join('');
+  });
+}
+loadList('submissions','subsList');
+loadList('feedback','fbList');
+loadList('contacts','ctList');
+
+// FEEDBACK
+document.getElementById('fbBtn').onclick = async ()=>{
+  const rate = document.getElementById('rate').value;
+  const txt  = document.getElementById('fbTxt').value.trim();
+  if(!txt) return alert('Enter feedback');
+  const arr = await loadArr('feedback');
+  arr.push({ user:document.getElementById('dispName').value||'Anon', rating:rate, text:txt });
+  await saveArr('feedback', arr);
+  loadList('feedback','fbList');
+};
+
+// CONTACT
+document.getElementById('ctBtn').onclick = async ()=>{
+  const msg = document.getElementById('ctTxt').value.trim();
+  if(!msg) return alert('Enter a message');
+  const arr = await loadArr('contacts');
+  arr.push({ user:document.getElementById('dispName').value||'Anon', message:msg });
+  await saveArr('contacts', arr);
+  loadList('contacts','ctList');
+};
+</script>
 </body>
 </html>
