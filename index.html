@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
   <title>Dated or Related?</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2em; }
-    img { max-width: 90%; border: 2px solid #888; border-radius: 8px; }
-    button { margin: .5em; padding: .5em 1em; font-size: 1em; }
-    #feedback { margin-top: 1em; font-weight: bold; }
+    img { max-width: 90%; border: 2px solid #666; border-radius: 8px; }
+    button { margin: 0.5em; padding: 0.5em 1em; font-size: 1.1em; }
+    #feedback { font-weight: bold; margin-top: 1em; }
   </style>
 </head>
 <body>
   <h1>Dated or Related?</h1>
-  <img id="pic" src="" alt="Game image">
+  <img id="pic" src="" alt="Pair image">
   <div>
     <button onclick="submitAnswer('related')">Related</button>
     <button onclick="submitAnswer('dated')">Dated</button>
@@ -21,43 +21,44 @@
   <p id="score"></p>
 
   <script>
-    let rounds = [], idx = 0, score = 0;
+    let data = [], idx = 0, score = 0;
 
+    // Load questions and enforce one per family
     fetch('data/questions.json')
-      .then(r=>r.json())
-      .then(all=>{
+      .then(res => res.json())
+      .then(json => {
         const seen = new Set();
-        rounds = all.filter(q=>{
-          if(seen.has(q.family)) return false;
+        data = json.filter(q => {
+          if (seen.has(q.family)) return false;
           seen.add(q.family);
           return true;
         });
-        show();
+        showQuestion();
       });
 
-    function show() {
-      if(idx >= rounds.length) {
+    function showQuestion() {
+      if (idx >= data.length) {
         document.body.innerHTML =
           `<h2>Game Over!</h2>
-           <p>Final Score: ${score} / ${rounds.length}</p>`;
+           <p>Your Score: ${score} / ${data.length}</p>`;
         return;
       }
-      document.getElementById('pic').src = rounds[idx].file;
+      document.getElementById('pic').src = data[idx].file;
       document.getElementById('feedback').textContent = '';
       document.getElementById('score').textContent =
         `Score: ${score} / ${idx}`;
     }
 
-    function submitAnswer(a) {
-      const correct = rounds[idx].answer;
-      if(a===correct) {
-        score++; document.getElementById('feedback').textContent = '✔️ Correct';
+    function submitAnswer(choice) {
+      const correct = data[idx].answer;
+      const fb = document.getElementById('feedback');
+      if (choice === correct) {
+        score++; fb.textContent = '✔️ Correct!';
       } else {
-        document.getElementById('feedback').textContent =
-          `❌ Wrong! It’s "${correct.toUpperCase()}"`;
+        fb.textContent = `❌ Wrong! It was "${correct.toUpperCase()}"`;
       }
       idx++;
-      setTimeout(show, 800);
+      setTimeout(showQuestion, 800);
     }
   </script>
 </body>
