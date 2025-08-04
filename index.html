@@ -6,12 +6,17 @@
   <title>Dated or Related?</title>
   <style>
     body { font-family:sans-serif; text-align:center; padding:1em }
-    img { max-width:90%; margin:1em 0; border:2px solid #666 }
-    button,input,select,textarea {
-      font-size:1em; padding:.5em; margin:.5em; width:90%; max-width:300px
+    img { max-width:90%; margin:1em 0; border:2px solid #666; border-radius:4px }
+    input,select,button,textarea {
+      font-size:1em; padding:.5em; margin:.5em; width:90%; max-width:300px;
+      display:block; box-sizing:border-box;
     }
-    .panel { max-width:600px; margin:1em auto; text-align:left; border-top:1px solid #ccc; padding-top:.5em }
-    .entry { margin-bottom:.5em }
+    .panel { max-width:600px; margin:1em auto; text-align:left;
+      border-top:1px solid #ccc; padding-top:.5em;
+    }
+    @keyframes shake {0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+    @keyframes bounce {0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .shake{animation:shake .5s} .bounce{animation:bounce .5s}
   </style>
 </head>
 <body>
@@ -31,12 +36,13 @@
   <div id="game" style="display:none">
     <img id="pic" alt="photo">
     <p id="hint"></p>
-    <button id="btnR">Related</button>
+    <!-- Dated on left, Related on right -->
     <button id="btnD">Dated</button>
+    <button id="btnR">Related</button>
     <p id="msg"></p>
     <p id="score"></p>
     <button id="nextQ" style="display:none">Next</button>
-    <button id="toggleComments">Show Comments</button>
+    <button id="toggleComments">Show Comments ▼</button>
     <div id="comments" class="panel" style="display:none"></div>
   </div>
 
@@ -68,10 +74,10 @@
   </div>
 
 <script>
-// Repo info
+// Extract owner/repo from URL
 const [,,owner,repo] = location.pathname.split('/');
 
-// Ask once for token named “DatedOrRelatedGameToken”
+// Ask once for your token named “DatedOrRelatedGameToken”
 function getToken(){
   let t = localStorage.getItem('gh_token');
   if(!t){
@@ -81,7 +87,7 @@ function getToken(){
   return t;
 }
 
-// Load or update any JSON file under data/
+// Load or save any data/[name].json array
 async function loadArr(name){
   const r = await fetch(`data/${name}.json`);
   return r.ok ? r.json() : [];
@@ -89,7 +95,7 @@ async function loadArr(name){
 async function saveArr(name, arr){
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/data/${name}.json`;
   const token = getToken();
-  // 1) fetch existing SHA
+  // 1) fetch SHA
   const r1 = await fetch(url, { headers:{Authorization:'token '+token} });
   const { sha } = await r1.json();
   // 2) update file
@@ -97,172 +103,177 @@ async function saveArr(name, arr){
     method:'PUT',
     headers:{Authorization:'token '+token,'Content-Type':'application/json'},
     body: JSON.stringify({
-      message:`update ${name}.json`,
-      content: btoa(JSON.stringify(arr,null,2)), sha
+      message: `update ${name}.json`,
+      content: btoa(JSON.stringify(arr,null,2)),
+      sha
     })
   });
 }
 
-// INITIAL LOAD: questions
+// QUESTIONS & GAME STATE
 let questions=[], queue=[], idx=0, score=0;
 fetch('data/questions.json').then(r=>r.json()).then(d=>questions=d);
 
-// UI refs
 const pic=document.getElementById('pic'),
       hintP=document.getElementById('hint'),
       msgP=document.getElementById('msg'),
       scoreP=document.getElementById('score'),
-      btnR=document.getElementById('btnR'),
       btnD=document.getElementById('btnD'),
+      btnR=document.getElementById('btnR'),
       nextQ=document.getElementById('nextQ'),
       setup=document.getElementById('setup'),
-      game=document.getElementById('game'),
+      game =document.getElementById('game'),
       numSel=document.getElementById('numSelect'),
       toggleComments=document.getElementById('toggleComments'),
       commentsDiv=document.getElementById('comments');
 
-// Helper: shuffle array
+// Shuffle helper
 const shuffle=a=>a.sort(()=>Math.random()-.5);
 
-// Build round with equal halves
-function buildQueue(count, level){
-  const pool = questions; // skipping level logic for brevity
-  const rel = pool.filter(q=>q.answer==='related'),
-        dat = pool.filter(q=>q.answer==='dated'),
+// Build round: half dated, half related
+function buildQueue(count){
+  const rels = questions.filter(q=>q.answer==='related'),
+        dats = questions.filter(q=>q.answer==='dated'),
         half = count/2;
   return shuffle(
-    shuffle(rel).slice(0,half).concat(shuffle(dat).slice(0,half))
+    shuffle(dats).slice(0,half)
+    .concat(shuffle(rels).slice(0,half))
   );
 }
 
-// Start game
+// Start round on level select
 setup.onclick = e=>{
   if(e.target.dataset.level){
-    const name = document.getElementById('dispName').value||'Anon';
+    const name = document.getElementById('dispName').value.trim()||'Anon';
     const count = +numSel.value;
-    queue = buildQueue(count, e.target.dataset.level);
+    queue = buildQueue(count);
     idx=0; score=0;
     setup.style.display='none';
     game.style.display='';
-    showQ(name);
+    showQ();
   }
 };
 
 // Show question or end screen
-async function showQ(name){
+async function showQ(){
   if(idx>=queue.length){
-    game.innerHTML = `<h2>Round Over!</h2><p>${name}, you scored ${score}/${queue.length}</p><button onclick="location.reload()">Play Again</button>`;
+    game.innerHTML = `
+      <h2>Round Over!</h2>
+      <p>Your Score: ${score}/${queue.length}</p>
+      <button onclick="location.reload()">Play Again</button>`;
     return;
   }
   const q = queue[idx];
-  pic.src = q.file; hintP.textContent = q.hint||'';
-  msgP.textContent = ''; scoreP.textContent = `Score: ${score}/${idx}`;
+  pic.src = q.file;
+  hintP.textContent = q.hint||'';
+  msgP.textContent = '';
+  scoreP.textContent = `Score: ${score}/${idx}`;
   nextQ.style.display='none';
 }
 
 // Handle a guess
 async function handleGuess(choice){
-  const name = document.getElementById('dispName').value||'Anon';
+  const name = document.getElementById('dispName').value.trim()||'Anon';
   const q = queue[idx];
   const correct = choice===q.answer;
   msgP.textContent = correct?'✔️ Correct!':'❌ Wrong!';
   if(correct) score++;
-  // save guess as comment
-  const comments = await loadArr('comments');
-  comments.push({ photo:q.file, user:name, guess:choice });
-  await saveArr('comments', comments);
+  // save guess to comments.json
+  const coms = await loadArr('comments');
+  coms.push({ photo:q.file, user:name, guess:choice });
+  await saveArr('comments', coms);
   showExplanation(q, !correct);
   scoreP.textContent = `Score: ${score}/${idx+1}`;
   nextQ.style.display='block';
 }
-btnR.onclick = ()=>handleGuess('related');
 btnD.onclick = ()=>handleGuess('dated');
-nextQ.onclick = ()=>{
-  idx++;
-  commentsDiv.style.display='none';
-  toggleComments.textContent='Show Comments';
-  showQ();
-};
+btnR.onclick = ()=>handleGuess('related');
+nextQ.onclick = ()=>{ idx++; commentsDiv.style.display='none'; toggleComments.textContent='Show Comments ▼'; showQ(); };
 
-// Show explanation, stats, trickiness, comments
+// Show explanation, stats, trickiness, and comments
 async function showExplanation(q, showTrick){
-  const allCom = await loadArr('comments');
-  const same = allCom.filter(c=>c.photo===q.file);
-  const rel = same.filter(c=>c.guess==='related').length;
-  const total = same.length, dp = total?100-Math.round(rel/total*100):0, rp = 100-dp;
+  const coms = await loadArr('comments'),
+        same = coms.filter(c=>c.photo===q.file),
+        rel  = same.filter(c=>c.guess==='related').length,
+        dat  = same.filter(c=>c.guess==='dated').length,
+        total=rel+dat,
+        rp   = total?Math.round(rel/total*100):0,
+        dp   = total?100-rp:0;
   let html = `
     <div><strong>Global guesses:</strong> Related ${rp}% | Dated ${dp}%</div>
     <div><strong>Answer:</strong> ${q.explanation}</div>`;
   if(showTrick){
-    const tricky = same
-      .map(c=>c.note||'').filter(n=>/\b(trick|hard|confusing)\b/i.test(n))
-      .slice(0,3).join('; ')||'No tricky feedback yet.';
-    html += `<div><strong>What made it tricky:</strong> ${tricky}</div>`;
+    const tricky = same.map(c=>c.note||'')
+      .filter(n=>/\b(trick|hard|confusing)\b/i.test(n))
+      .slice(0,3).join('; ') || 'No tricky feedback yet.';
+    html+=`<div><strong>What made it tricky:</strong> ${tricky}</div>`;
   }
   same.forEach(c=>{
-    if(c.note) html += `<div><strong>${c.user}</strong>: ${c.note}</div>`;
+    if(c.note) html+=`<div><strong>${c.user}</strong>: ${c.note}</div>`;
   });
-  html += `<div>
-    <input id="newNote" placeholder="Your comment…">
-    <button id="postNote">Post</button>
-  </div>`;
+  html+=`
+    <div>
+      <input id="newNote" placeholder="Add a comment…">
+      <button id="postNote">Post</button>
+    </div>`;
   commentsDiv.innerHTML = html;
   commentsDiv.style.display = 'block';
-  toggleComments.textContent = 'Hide Comments';
+  toggleComments.textContent = 'Hide Comments ▲';
   document.getElementById('postNote').onclick = async ()=>{
     const note = document.getElementById('newNote').value.trim();
     if(!note) return;
-    const cm = await loadArr('comments');
-    cm.push({ photo:q.file, user:document.getElementById('dispName').value||'Anon', note });
-    await saveArr('comments', cm);
+    same.push({ photo:q.file, user:name, note });
+    await saveArr('comments', same.concat(coms.filter(c=>c.photo!==q.file)));
     showExplanation(q, showTrick);
   };
 }
 toggleComments.onclick = ()=>{
   const hidden = commentsDiv.style.display==='none';
   commentsDiv.style.display = hidden?'block':'none';
-  toggleComments.textContent = hidden?'Hide Comments':'Show Comments';
+  toggleComments.textContent = hidden?'Hide Comments ▲':'Show Comments ▼';
 };
 
 // PHOTO SUBMISSIONS
 document.getElementById('subBtn').onclick = async ()=>{
-  const url = document.getElementById('subUrl').value.trim();
-  const ans = document.getElementById('subAns').value;
-  const ctx = document.getElementById('subCtx').value.trim();
-  if(!url||!ctx) return alert('Image URL & context required');
+  const url = document.getElementById('subUrl').value.trim(),
+        ans = document.getElementById('subAns').value,
+        ctx = document.getElementById('subCtx').value.trim(),
+        name= document.getElementById('dispName').value.trim()||'Anon';
+  if(!url||!ctx) return alert('URL & context needed');
   const arr = await loadArr('submissions');
-  arr.push({ user:document.getElementById('dispName').value||'Anon', url, answer:ans, context:ctx });
+  arr.push({ user:name, url, answer:ans, context:ctx });
   await saveArr('submissions', arr);
   loadList('submissions','subsList');
 };
-function loadList(name, elId){
-  loadArr(name).then(arr=>{
-    document.getElementById(elId).innerHTML = arr.map(e=>
-      `<div class="entry">${e.user}: <a href="${e.url}" target="_blank">photo</a> (${e.answer}) – ${e.context}</div>`
-    ).join('');
+function loadList(name,el){
+  loadArr(name).then(a=>{
+    document.getElementById(el).innerHTML =
+      a.map(e=>`<div class="entry">${e.user}: <a href="${e.url}" target="_blank">photo</a> (${e.answer}) – ${e.context||e.text||e.message}</div>`).join('');
   });
 }
 loadList('submissions','subsList');
 loadList('feedback','fbList');
 loadList('contacts','ctList');
 
-// FEEDBACK
+// GAME FEEDBACK
 document.getElementById('fbBtn').onclick = async ()=>{
-  const rate = document.getElementById('rate').value;
-  const txt  = document.getElementById('fbTxt').value.trim();
-  if(!txt) return alert('Enter feedback');
-  const arr = await loadArr('feedback');
-  arr.push({ user:document.getElementById('dispName').value||'Anon', rating:rate, text:txt });
+  const rate=document.getElementById('rate').value,
+        txt =document.getElementById('fbTxt').value.trim(),
+        name=document.getElementById('dispName').value.trim()||'Anon';
+  if(!txt) return alert('Please enter feedback');
+  const arr=await loadArr('feedback');
+  arr.push({ user:name, rating:rate, text:txt });
   await saveArr('feedback', arr);
   loadList('feedback','fbList');
 };
 
 // CONTACT
 document.getElementById('ctBtn').onclick = async ()=>{
-  const msg = document.getElementById('ctTxt').value.trim();
+  const msg=document.getElementById('ctTxt').value.trim(),
+        name=document.getElementById('dispName').value.trim()||'Anon';
   if(!msg) return alert('Enter a message');
-  const arr = await loadArr('contacts');
-  arr.push({ user:document.getElementById('dispName').value||'Anon', message:msg });
+  const arr=await loadArr('contacts');
+  arr.push({ user:name, message:msg });
   await saveArr('contacts', arr);
   loadList('contacts','ctList');
 };
