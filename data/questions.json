@@ -2,13 +2,11 @@
   {
     "file": "images/pic1.jpg",
     "answer": "related",
-    "family": "Smith",
-    "context": "Family picnic in the park"
+    "family": "Smith"
   },
   {
     "file": "images/pic2.jpg",
     "answer": "dated",
-    "family": "Nguyen",
-    "context": "Coffee shop date"
+    "family": "Nguyen"
   }
 ]
