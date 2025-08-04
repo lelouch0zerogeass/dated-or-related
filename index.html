@@ -1,28 +1,64 @@
-<script>
-  let questions = [];
-  let index = 0, score = 0;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dated or Related?</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    img { max-width: 90%; border: 2px solid #888; border-radius: 8px; }
+    button { margin: .5em; padding: .5em 1em; font-size: 1em; }
+    #feedback { margin-top: 1em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Dated or Related?</h1>
+  <img id="pic" src="" alt="Game image">
+  <div>
+    <button onclick="submitAnswer('related')">Related</button>
+    <button onclick="submitAnswer('dated')">Dated</button>
+  </div>
+  <p id="feedback"></p>
+  <p id="score"></p>
 
-  // Fetch approved questions.json
-  fetch('data/questions.json')
-    .then(res => res.json())
-    .then(all => {
-      const seen = new Set();
-      // Keep only the first occurrence of each family
-      questions = all.filter(q => {
-        if (seen.has(q.family)) return false;
-        seen.add(q.family);
-        return true;
+  <script>
+    let rounds = [], idx = 0, score = 0;
+
+    fetch('data/questions.json')
+      .then(r=>r.json())
+      .then(all=>{
+        const seen = new Set();
+        rounds = all.filter(q=>{
+          if(seen.has(q.family)) return false;
+          seen.add(q.family);
+          return true;
+        });
+        show();
       });
-      loadQuestion();
-    });
 
-  function loadQuestion() {
-    const q = questions[index];
-    document.getElementById('pic').src = q.file;
-    document.getElementById('feedback').textContent = '';
-    document.getElementById('score').textContent = `Score: ${score} / ${index}`;
-  }
+    function show() {
+      if(idx >= rounds.length) {
+        document.body.innerHTML =
+          `<h2>Game Over!</h2>
+           <p>Final Score: ${score} / ${rounds.length}</p>`;
+        return;
+      }
+      document.getElementById('pic').src = rounds[idx].file;
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('score').textContent =
+        `Score: ${score} / ${idx}`;
+    }
 
-  function submitAnswer(choice) { /*…same as before…*/ }
-  window.onload = loadQuestion;
-</script>
+    function submitAnswer(a) {
+      const correct = rounds[idx].answer;
+      if(a===correct) {
+        score++; document.getElementById('feedback').textContent = '✔️ Correct';
+      } else {
+        document.getElementById('feedback').textContent =
+          `❌ Wrong! It’s "${correct.toUpperCase()}"`;
+      }
+      idx++;
+      setTimeout(show, 800);
+    }
+  </script>
+</body>
+</html>
