@@ -1,4 +1,15 @@
 [
-  { "file":"images/pic1.jpg", "answer":"related", "family":"Smith" },
-  { "file":"images/pic2.png", "answer":"dated",   "family":"Lee" }
+  {
+    "file": "pic1.jpg",
+    "answer": "related",
+    "hint": "At Grandma’s house",
+    "explanation": "They share her antique clock."
+  },
+  {
+    "file": "pic2.png",
+    "answer": "dated",
+    "hint": "Spring festival",
+    "explanation": "Taken two years apart."
+  }
+  // …and so on…
 ]
