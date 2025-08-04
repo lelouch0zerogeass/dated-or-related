@@ -1,60 +1,28 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Dated or Related?</title>
-  <style>
-    body { font-family: sans-serif; text-align: center; padding: 1em; }
-    img { max-width: 90%; height: auto; border: 2px solid #ccc; border-radius: 8px; }
-    button { margin: 0.5em; font-size: 1.1em; padding: 0.5em 1em; }
-    #feedback { font-weight: bold; margin-top: 1em; }
-  </style>
-</head>
-<body>
-  <h1>Dated or Related?</h1>
-  <div id="game">
-    <img id="pic" src="" alt="Question image">
-    <div>
-      <button onclick="submitAnswer('related')">Related</button>
-      <button onclick="submitAnswer('dated')">Dated</button>
-    </div>
-    <p id="feedback"></p>
-    <p id="score"></p>
-  </div>
+<script>
+  let questions = [];
+  let index = 0, score = 0;
 
-  <script>
-    const questions = [
-      { url: 'pic1.jpg', answer: 'related' },
-      { url: 'pic2.jpg', answer: 'dated' }
-      // Add more rounds here
-    ];
+  // Fetch approved questions.json
+  fetch('data/questions.json')
+    .then(res => res.json())
+    .then(all => {
+      const seen = new Set();
+      // Keep only the first occurrence of each family
+      questions = all.filter(q => {
+        if (seen.has(q.family)) return false;
+        seen.add(q.family);
+        return true;
+      });
+      loadQuestion();
+    });
 
-    let index = 0, score = 0;
+  function loadQuestion() {
+    const q = questions[index];
+    document.getElementById('pic').src = q.file;
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('score').textContent = `Score: ${score} / ${index}`;
+  }
 
-    function loadQuestion() {
-      document.getElementById('pic').src = questions[index].url;
-      document.getElementById('feedback').textContent = '';
-      document.getElementById('score').textContent = `Score: ${score} / ${index}`;
-    }
-
-    function submitAnswer(choice) {
-      const correct = questions[index].answer;
-      if (choice === correct) {
-        score++;
-        document.getElementById('feedback').textContent = 'Correct!';
-      } else {
-        document.getElementById('feedback').textContent = `Wrong! They are "${correct}".`;
-      }
-      index++;
-      if (index < questions.length) {
-        setTimeout(loadQuestion, 1000);
-      } else {
-        document.getElementById('game').innerHTML =
-          `<h2>Game Over!</h2><p>Final Score: ${score} / ${questions.length}</p>`;
-      }
-    }
-
-    window.onload = loadQuestion;
-  </script>
-</body>
-</html>
+  function submitAnswer(choice) { /*…same as before…*/ }
+  window.onload = loadQuestion;
+</script>
