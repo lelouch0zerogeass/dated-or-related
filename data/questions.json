@@ -3,13 +3,12 @@
     "file": "images/pic1.jpg",
     "answer": "related",
     "family": "Smith",
-    "context": "Outdoors at a family picnic"
+    "context": "Family picnic in the park"
   },
   {
     "file": "images/pic2.jpg",
     "answer": "dated",
     "family": "Nguyen",
-    "context": "At a coffee shop date"
+    "context": "Coffee shop date"
   }
-  // …more approved rounds…
 ]
