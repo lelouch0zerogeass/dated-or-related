@@ -14,23 +14,29 @@ const gameData = [
 
 let currentRound = 0;
 let isLoading = false;
+let preloadedImages = [];
+
+// Preload all images at start
+function preloadImages() {
+  gameData.forEach(item => {
+    const img = new Image();
+    img.src = item.image;
+    preloadedImages.push(img);
+  });
+}
 
 function loadImage() {
   const container = document.getElementById("image-container");
   container.innerHTML = '<div class="loader"></div>';
   
-  const img = new Image();
-  img.src = gameData[currentRound].image;
-  img.className = "game-image";
-  
-  img.onload = function() {
+  setTimeout(() => {
     container.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = gameData[currentRound].image;
+    img.className = 'game-image';
+    img.alt = 'Dated or Related?';
     container.appendChild(img);
-  };
-  
-  img.onerror = function() {
-    container.innerHTML = '<p>⚠️ Image failed to load</p>';
-  };
+  }, 300);
 }
 
 function checkGuess(guess) {
@@ -46,13 +52,8 @@ function checkGuess(guess) {
   resultElement.innerText = result ? "✅ Correct!" : "❌ Wrong!";
   resultElement.style.color = result ? "#27ae60" : "#e74c3c";
   
-  // Preload next image
-  const nextRound = (currentRound + 1) % gameData.length;
-  const nextImage = new Image();
-  nextImage.src = gameData[nextRound].image;
-  
   setTimeout(() => {
-    currentRound = nextRound;
+    currentRound = (currentRound + 1) % gameData.length;
     resultElement.innerText = "";
     loadImage();
     isLoading = false;
@@ -61,6 +62,7 @@ function checkGuess(guess) {
 
 // Initialize game
 document.addEventListener("DOMContentLoaded", () => {
+  preloadImages();
   loadImage();
   
   // Set up buttons
