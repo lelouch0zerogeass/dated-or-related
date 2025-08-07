@@ -1,8 +1,9 @@
 // Game data: Image URLs and answers (0 = Related, 1 = Dating)
 const gameData = [
-  { image: "URL1", answer: 0 },
-  { image: "URL2", answer: 1 },
-  { image: "URL3", answer: 0 }
+  { image: "VarshavskiSiblings.png", answer: 0 },
+  { image: "VarshavskiDating.png", answer: 1 },
+  { image: "DejakuRelated.png", answer: 0 }
+  { image: "DejakuDated.png", answer: 1 }
 ];
 
 let currentRound = 0;
