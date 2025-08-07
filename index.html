@@ -7,19 +7,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Dated or Related?</h1>
-  <div id="image-container"></div>
-  
-  <div class="button-container">
-    <button id="dating-btn">
-      DATED <span class="emoji">💑</span>
-    </button>
-    <button id="related-btn">
-      RELATED <span class="emoji">👨‍👩‍👧</span>
-    </button>
+  <div class="container">
+    <h1>Dated or Related?</h1>
+    <div id="image-container"></div>
+    
+    <div class="button-container">
+      <button id="dating-btn" aria-label="Dated">
+        DATED <span class="emoji">💑</span>
+      </button>
+      <button id="related-btn" aria-label="Related">
+        RELATED <span class="emoji">👨‍👩‍👧</span>
+      </button>
+    </div>
+    
+    <div id="result"></div>
   </div>
-  
-  <div id="result"></div>
   
   <script src="script.js"></script>
 </body>
