@@ -8,29 +8,28 @@ const gameData = [
 
 let currentRound = 0;
 
-// Load image for the current round
 function loadImage() {
-  document.getElementById("image-container").style.backgroundImage = 
-    `url(${gameData[currentRound].image})`;
+  const imageContainer = document.getElementById("image-container");
+  imageContainer.style.backgroundImage = `url('${gameData[currentRound].image}')`;
 }
 
-// Check the player's guess
 function checkGuess(guess) {
+  const resultElement = document.getElementById("result");
   const correct = gameData[currentRound].answer === guess;
-  document.getElementById("result").innerText = 
-    correct ? "✅ Correct!" : "❌ Wrong!";
+  
+  resultElement.innerText = correct ? "✅ Correct!" : "❌ Wrong!";
+  resultElement.style.color = correct ? "green" : "red";
 
-  // Next round after 1 second
   setTimeout(() => {
     currentRound = (currentRound + 1) % gameData.length;
     loadImage();
-    document.getElementById("result").innerText = "";
-  }, 1000);
+    resultElement.innerText = "";
+  }, 1500);
 }
 
-// Setup buttons
-document.getElementById("related-btn").onclick = () => checkGuess(0);
-document.getElementById("dating-btn").onclick = () => checkGuess(1);
+// Initialize buttons with fixed IDs
+document.getElementById("related-btn").addEventListener("click", () => checkGuess(0));
+document.getElementById("dating-btn").addEventListener("click", () => checkGuess(1));
 
 // Start the game
 loadImage();
