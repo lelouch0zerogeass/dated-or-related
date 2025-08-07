@@ -11,20 +11,24 @@ let totalRounds = 0;
 
 function loadImage() {
   const imageContainer = document.getElementById("image-container");
-  const img = new Image();
+  imageContainer.innerHTML = ""; // Clear previous content
   
-  img.onload = function() {
-    imageContainer.style.backgroundImage = `url('${gameData[currentRound].image}')`;
-  };
+  const img = document.createElement("img");
+  img.src = gameData[currentRound].image;
+  img.alt = "Dated or Related?";
+  img.style.maxWidth = "100%";
+  img.style.maxHeight = "100%";
+  img.style.borderRadius = "8px";
   
-  img.onerror = function() {
-    console.error("Failed to load image:", gameData[currentRound].image);
-    imageContainer.style.backgroundImage = "none";
-    imageContainer.innerHTML = `<p>Image not loaded</p><p>${gameData[currentRound].image}</p>`;
+  img.onload = () => imageContainer.appendChild(img);
+  img.onerror = () => {
+    imageContainer.innerHTML = `<p>⚠️ Image failed to load</p>
+                               <p>${gameData[currentRound].image}</p>`;
     imageContainer.style.display = "flex";
-    imageContainer.style.alignItems = "center";
+    imageContainer.style.flexDirection = "column";
     imageContainer.style.justifyContent = "center";
   };
+}
   
   img.src = gameData[currentRound].image;
 }
