@@ -1,19 +1,22 @@
-// Get all image paths from your repository
+// Get all image paths
 const allImages = [
   "images/VarshavskiSiblings.png",
   "images/VarshavskiDating.png",
   "images/DejakuRelated.png",
   "images/DejakuDated.png",
-  // Add more images here later
+  // Add more images here as: "images/YourSurnameType.png"
 ];
 
-// Extract surname from filename
+// Automatically extract surname from filename
 function getSurname(filename) {
-  filename = filename.toLowerCase();
-  if (filename.includes("varshavski")) return "varshavski";
-  if (filename.includes("dejaku")) return "dejaku";
-  // Add more surnames when you add more images
-  return filename.split(/(?:dated|dating|related|siblings)/i)[0];
+  // Remove file extension and make lowercase
+  const cleanName = filename.toLowerCase().replace(/\.[^/.]+$/, "");
+  
+  // Extract text before keywords (dated/dating/related/siblings)
+  const surnameMatch = cleanName.match(/(.*?)(?:dated|dating|related|siblings)/);
+  
+  // Return surname or full filename if no match
+  return surnameMatch ? surnameMatch[1].replace(/[^a-z]/g, '') : cleanName;
 }
 
 // Create game session with unique surnames
@@ -22,13 +25,16 @@ function createGameSession() {
   const sessionData = [];
   
   allImages.forEach(path => {
-    const surname = getSurname(path);
-    if (!surnameMap.has(surname)) {
+    // Extract just the filename without folder
+    const filename = path.split('/').pop();
+    const surname = getSurname(filename);
+    
+    if (surname && !surnameMap.has(surname)) {
       surnameMap.set(surname, true);
       sessionData.push({
         image: path,
-        answer: path.toLowerCase().includes("sibling") || 
-                path.toLowerCase().includes("related") ? 0 : 1
+        answer: filename.toLowerCase().includes("sibling") || 
+                filename.toLowerCase().includes("related") ? 0 : 1
       });
     }
   });
