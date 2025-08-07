@@ -1,76 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Image Quiz Game</title>
-  <style>
-    body { font-family: sans-serif; text-align: center; }
-    img { max-width: 80%; height: auto; }
-    #game, #result { margin-top: 20px; }
-    #levels button { margin: 5px; }
-  </style>
+  <title>Dated or Related?</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Click a Level</h1>
-  <div id="levels"></div>
-
-  <div id="game" style="display:none;">
-    <img id="question-img" src="" alt="Question image">
-    <p id="hint"></p>
-    <input id="answer-input" placeholder="Your answer">
-    <button id="submit-btn">Submit</button>
-  </div>
-
-  <div id="result" style="display:none;">
-    <p id="explanation"></p>
-    <button id="back-btn">Back to Levels</button>
-  </div>
-
-  <script>
-    let questions = [];
-    // Load data/questions.json from same repo
-    fetch('data/questions.json')
-      .then(res => res.json())
-      .then(data => {
-        questions = data;
-        const levelsDiv = document.getElementById('levels');
-        questions.forEach((q, i) => {
-          const btn = document.createElement('button');
-          btn.textContent = 'Level ' + (i + 1);
-          btn.onclick = () => startRound(i);
-          levelsDiv.appendChild(btn);
-        });
-      });
-
-    function startRound(index) {
-      document.getElementById('levels').style.display = 'none';
-      document.getElementById('game').style.display = 'block';
-      document.getElementById('question-img').src = 'images/' + questions[index].file;
-      document.getElementById('hint').textContent = 'Hint: ' + questions[index].hint;
-      document.getElementById('submit-btn').onclick = () => checkAnswer(index);
-    }
-
-    function checkAnswer(idx) {
-      const input = document.getElementById('answer-input');
-      if (input.value.trim().toLowerCase() === questions[idx].answer.toLowerCase()) {
-        showResult(idx);
-      } else {
-        alert('Try again!');
-      }
-    }
-
-    function showResult(idx) {
-      document.getElementById('game').style.display = 'none';
-      const res = document.getElementById('result');
-      res.style.display = 'block';
-      document.getElementById('explanation').textContent = questions[idx].explanation;
-      document.getElementById('back-btn').onclick = () => {
-        res.style.display = 'none';
-        document.getElementById('levels').style.display = 'block';
-        document.getElementById('answer-input').value = '';
-      };
-    }
-  </script>
+  <h1>Dated or Related?</h1>
+  <div id="image-container"></div>
+  <button id="related-btn">RELATED 👨‍👩‍👧</button>
+  <button id="dating-btn">DATING 💑</button>
+  <div id="result"></div>
+  <script src="script.js"></script>
 </body>
 </html>
-
