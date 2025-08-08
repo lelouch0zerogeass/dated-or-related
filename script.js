@@ -4,7 +4,7 @@ const allImages = [
   "images/VarshavskiDating.png",
   "images/DejakuRelated.png",
   "images/DejakuDated.png",
-  // Add more images here as: "images/YourSurnameType.png"
+  // Add more images here as: "images/SurnameType.png"
 ];
 
 // Automatically extract surname from filename
@@ -19,28 +19,62 @@ function getSurname(filename) {
   return surnameMatch ? surnameMatch[1].replace(/[^a-z]/g, '') : cleanName;
 }
 
-// Create game session with unique surnames
+// Create balanced game session (50% dated, 50% related)
 function createGameSession() {
-  const surnameMap = new Map();
-  const sessionData = [];
+  // Group images by surname
+  const surnameGroups = new Map();
   
   allImages.forEach(path => {
-    // Extract just the filename without folder
     const filename = path.split('/').pop();
     const surname = getSurname(filename);
     
-    if (surname && !surnameMap.has(surname)) {
-      surnameMap.set(surname, true);
-      sessionData.push({
-        image: path,
-        answer: filename.toLowerCase().includes("sibling") || 
-                filename.toLowerCase().includes("related") ? 0 : 1
-      });
+    if (!surnameGroups.has(surname)) {
+      surnameGroups.set(surname, []);
+    }
+    
+    surnameGroups.get(surname).push({
+      path,
+      type: filename.toLowerCase().includes("sibling") || 
+            filename.toLowerCase().includes("related") ? "related" : "dated"
+    });
+  });
+  
+  // Prepare balanced session data
+  const relatedImages = [];
+  const datedImages = [];
+  
+  // Process each surname group
+  surnameGroups.forEach(images => {
+    // Randomly select one image per surname
+    const randomImage = images[Math.floor(Math.random() * images.length)];
+    
+    if (randomImage.type === "related") {
+      relatedImages.push(randomImage);
+    } else {
+      datedImages.push(randomImage);
     }
   });
   
-  // Shuffle the session data
-  return sessionData.sort(() => Math.random() - 0.5);
+  // Calculate how many of each type we need (50/50 balance)
+  const maxPairs = Math.min(relatedImages.length, datedImages.length);
+  const halfCount = Math.max(2, Math.floor(maxPairs)); // Minimum 2 images
+  
+  // Select random images for each type
+  const selectedRelated = shuffleArray(relatedImages).slice(0, halfCount);
+  const selectedDated = shuffleArray(datedImages).slice(0, halfCount);
+  
+  // Combine and shuffle all selected images
+  const sessionData = shuffleArray([...selectedRelated, ...selectedDated]).map(item => ({
+    image: item.path,
+    answer: item.type === "related" ? 0 : 1
+  }));
+  
+  return sessionData;
+}
+
+// Helper to shuffle arrays
+function shuffleArray(array) {
+  return [...array].sort(() => Math.random() - 0.5);
 }
 
 let gameData = [];
@@ -90,7 +124,7 @@ function checkGuess(guess) {
   setTimeout(() => {
     currentRound++;
     if (currentRound >= gameData.length) {
-      // Game over - create new session
+      // Create new balanced session
       gameData = createGameSession();
       currentRound = 0;
     }
